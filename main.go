@@ -22,7 +22,7 @@ func main() {
 			fmt.Println("exit")
 			os.Exit(0)
 		case "convert":
-			_, err := os.Stat("yr/kjevik-temp-fahr-20220318-20230318.csv")
+			_, err := os.Stat("kjevik-temp-fahr-20220318-20230318.csv")
 			if os.IsNotExist(err) {
 				convertCelsiusToFahrenheit()
 			} else {
@@ -45,13 +45,13 @@ func main() {
 
 func convertCelsiusToFahrenheit() {
 	fmt.Println("Converting all measurements given in degrees Celsius to degrees Fahrenheit.")
-	src, err := os.Open("yr/kjevik-temp-celsius-20220318-20230318.csv")
+	src, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer src.Close()
 
-	dst, err := os.Create("yr/kjevik-temp-fahr-20220318-20230318.csv")
+	dst, err := os.Create("kjevik-temp-fahr-20220318-20230318.csv")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -72,7 +72,7 @@ func CountLines(input string) int {
 }
 func AverageTemp(sum int, count float64) float64 {
 
-	src, err := os.Open("yr/kjevik-temp-fahr-20220318-20230318.csv")
+	src, err := os.Open("kjevik-temp-fahr-20220318-20230318.csv")
 	if err != nil {
 		log.Fatal(err)
 	}

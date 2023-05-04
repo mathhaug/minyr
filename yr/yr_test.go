@@ -1,198 +1,63 @@
 package yr
 
 import (
-	"bufio"
-	"encoding/csv"
-	"io"
-	"os"
-	"strings"
+	"math"
 	"testing"
 )
 
-// antall linjer i filen er 16756
-func TestFileLineCount(t *testing.T) {
-	filename := ("kjevik-temp-celsius-20220318-20230318.csv")
-	expectedLines := 16756
+func TestCelsiusToFahrenheitLine(t *testing.T) {
 
-	file, err := os.Open(filename)
-	if err != nil {
-		t.Fatalf("Feilet å åpne fil %s: %v", filename, err)
+	type test struct {
+		input string
+		want  string
 	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	lineCount := 0
-	for scanner.Scan() {
-		lineCount++
+	tests := []test{
+		{input: "Kjevik;SN39040;18.03.2022 01:50;6", want: "Kjevik;SN39040;18.03.2022 01:50;42.8"},
+		{input: "Kjevik;SN39040;07.03.2023 18:20;0", want: "Kjevik;SN39040;07.03.2023 18:20;32.0"},
+		{input: "Kjevik;SN39040;08.03.2023 02:20;-11", want: "Kjevik;SN39040;08.03.2023 02:20;12.2"},
+		{input: "Data er gyldig per 18.03.2023 (CC BY 4.0), Meteorologiskinstitutt (MET);;;",
+			want: "Data er basert paa gyldig data (per 18.03.2023) (CCBY 4.0) fra Meteorologisk institutt (MET);endringen er gjort av Mathias Haugen"},
 	}
-	if err := scanner.Err(); err != nil {
-		t.Fatalf("Feilet å skanne fil %s: %v", filename, err)
-	}
-
-	if lineCount != expectedLines {
-		t.Errorf("uforusett linje antall i fil %s: forventet %d, fikk %d", filename, expectedLines, lineCount)
-	}
-}
-
-// gitt "Kjevik;SN39040;18.03.2022 01:50;6" ønsker å få (want) "Kjevik;SN39040;18.03.2022 01:50;42,8"
-func TestConversion8(t *testing.T) {
-	// åpnee csv filen
-	file, err := os.Open("kjevik-temp-fahr-20220318-20230318.csv")
-	if err != nil {
-		t.Errorf("Feilet å åpne fil: %v", err)
-	}
-	defer file.Close()
-
-	// Lager en ny csv lesere for å lese csv filen
-	reader := csv.NewReader(file)
-
-	// Loop gjennom hver linje i csv filen
-	for {
-		// Leser en linje fra csv filen
-		line, err := reader.Read()
+	for _, tc := range tests {
+		got, err := CelsiusToFahrenheitLine(tc.input)
+		if got != tc.want {
+			t.Errorf("expected: %s, got: %s", tc.want, got)
+		}
 		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				t.Errorf("Feilet å lese filen: %v", err)
-				return
-			}
+			t.Errorf("Unexpected error: %v", err)
 		}
-
-		// Sjekker om linjen matcher den spesifiserte linjen
-		if line[0] == "Kjevik" && line[1] == "SN39040" && line[2] == "18.03.2022 01:50" {
-			// Sjekker om temperaturen er riktig konvertert
-			want := "42.8"
-			got := line[3]
-			if got != want {
-				t.Errorf("Konvertering feil. Fikk %v, forventer %v", got, want)
-			}
-			return
-		}
-	}
-	t.Errorf("Linje ikke funnet.")
-}
-
-// gitt "Kjevik;SN39040;07.03.2023 18:20;0" ønsker å få (want) "Kjevik;SN39040;07.03.2023 18:20;32"
-func TestConversion32(t *testing.T) {
-	file, err := os.Open("kjevik-temp-fahr-20220318-20230318.csv")
-	if err != nil {
-		t.Errorf("Feilet å åpne fil: %v", err)
-	}
-	defer file.Close()
-
-	reader := csv.NewReader(file)
-
-	for {
-		line, err := reader.Read()
-		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				t.Errorf("Feilet å lese filen: %v", err)
-				return
-			}
-		}
-
-		if line[0] == "Kjevik" && line[1] == "SN39040" && line[2] == "07.03.2023 18:20" {
-			want := "32.0"
-			got := line[3]
-			if got != want {
-				t.Errorf("Konvertering feilet. Fikk %v, forventer %v", got, want)
-			}
-			return
-		}
-	}
-
-	t.Errorf("Linje ikke funnet i filen.")
-}
-
-// gitt "Kjevik;SN39040;08.03.2023 02:20;-11" ønsker å få (want) "Kjevik;SN39040;08.03.2023 02:20;12.2"
-func TestConversion2(t *testing.T) {
-	file, err := os.Open("kjevik-temp-fahr-20220318-20230318.csv")
-	if err != nil {
-		t.Errorf("Feilet å åpne fil: %v", err)
-	}
-	defer file.Close()
-
-	reader := csv.NewReader(file)
-
-	for {
-		line, err := reader.Read()
-		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				t.Errorf("Feilet å lese filen: %v", err)
-				return
-			}
-		}
-
-		if line[0] == "Kjevik" && line[1] == "SN39040" && line[2] == "08.03.2023 02:20" {
-			want := "12.2"
-			got := line[3]
-			if got != want {
-				t.Errorf("Konvertering feilet. Fikk %v, forventer %v", got, want)
-			}
-			return
-		}
-	}
-
-	t.Errorf("Linje ikke funnet i filen.")
-}
-
-/*
-gitt "Data er gyldig per 18.03.2023 (CC BY 4.0), Meteorologisk institutt (MET);;;" ønsker å få (want)
-"Data er basert på gyldig data (per 18.03.2023) (CC BY 4.0) fra Meteorologisk institutt (MET);endringen er gjort av
-STUDENTENS_NAVN", hvor STUDENTENS_NAVN er navn på studenten som leverer besvarelsen
-*/
-func TestLastLineOfFile(t *testing.T) {
-	file, err := os.Open("kjevik-temp-fahr-20220318-20230318.csv")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer file.Close()
-
-	// Skanner gjennom filen linje for linje, og holder styr på den siste linjen som ble lest
-	var lastLine string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lastLine = scanner.Text()
-	}
-	if err := scanner.Err(); err != nil {
-		t.Fatal(err)
-	}
-
-	// Sjekker at den siste linjen inneholder den forventede teksten
-	expectedText := "Data er basert paa gyldig data (per 18.03.2023) (CC BY 4.0) fra Meteorologisk institutt (MET); endringen er gjort av Mathias Haugen"
-	if !strings.Contains(lastLine, expectedText) {
-		t.Errorf("Siste linje i filen matcher ikke forventet resultat. fikk: %q, forventet tekst: %q", lastLine, expectedText)
 	}
 }
+func TestCountLines(t *testing.T) {
 
-func TestAverageCelsius(t *testing.T) {
-	expected := 8.55897099200191
-
-	// Endrer arbeidskatalogen til katalogen der CSV-filen befinner seg
-	err := os.Chdir("..")
-	if err != nil {
-		t.Fatalf("Feil: %v", err)
+	type test struct {
+		input string
+		want  int
 	}
-
-	// Endrer arbeidskatalogen tilbake til katalogen der testfilen befinner seg når testen er ferdig
-	defer func() {
-		err = os.Chdir("yr")
-		if err != nil {
-			t.Fatalf("Feil: %v", err)
+	tests := []test{
+		{input: "yr/kjevik-temp-fahr-20220318-20230318.csv", want: 16756},
+	}
+	for _, tc := range tests {
+		got := CountLines(tc.input)
+		if got != tc.want {
+			t.Errorf("expected: %v, got: %v", tc.want, got)
 		}
-	}()
-
-	avg, err := Average("c")
-	if err != nil {
-		t.Fatalf("Feil: %v", err)
 	}
+}
+func TestAverageTemp(t *testing.T) {
 
-	if avg != expected {
-		t.Fatalf("Gjennomsnittet er %v, men forventet %v", avg, expected)
+	type test struct {
+		sum   int
+		count float64
+		want  float64
+	}
+	tests := []test{
+		{sum: 143397, count: 16754, want: 8.56},
+	}
+	for _, tc := range tests {
+		got := AverageTemp(tc.sum, tc.count)
+		if math.Round(got*100)/100 != tc.want {
+			t.Errorf("expected: %.2f, got: %.2f", tc.want, got)
+		}
 	}
 }
