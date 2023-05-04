@@ -3,61 +3,112 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
+	"github.com/mathhaug/funtemps/conv"
 	"github.com/mathhaug/minyr/yr"
 )
 
 func main() {
-	// Venter på at brukeren skal skrive inn "minyr"
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Skriv inn 'minyr' for å starte programmet: ")
-	text, _ := reader.ReadString('\n')
-	if strings.ToLower(strings.TrimSpace(text)) != "minyr" {
-		fmt.Println("Ugyldig verdi.")
-		return
+	var input string
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		input = scanner.Text()
+
+		switch input {
+		case "q", "exit":
+			fmt.Println("exit")
+			os.Exit(0)
+		case "convert":
+			_, err := os.Stat("yr/kjevik-temp-fahr-20220318-20230318.csv")
+			if os.IsNotExist(err) {
+				convertCelsiusToFahrenheit()
+			} else {
+				fmt.Println("The output file already exists. Are you sure you want to convert all measurements given in degrees Celsius to degrees Fahrenheit? (y/n)")
+				scanner.Scan()
+				input = scanner.Text()
+				if strings.ToLower(input) == "y" {
+					convertCelsiusToFahrenheit()
+				} else {
+					fmt.Println("Conversion canceled.")
+				}
+			}
+		case "average":
+			averageTemp()
+		default:
+			fmt.Println("Please select convert, average or exit:")
+		}
+	}
+}
+
+func convertCelsiusToFahrenheit() {
+	fmt.Println("Converting all measurements given in degrees Celsius to degrees Fahrenheit.")
+	src, err := os.Open("yr/kjevik-temp-celsius-20220318-20230318.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer src.Close()
+
+	dst, err := os.Create("yr/kjevik-temp-fahr-20220318-20230318.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dst.Close()
+
+	scanner := bufio.NewScanner(src)
+	writer := bufio.NewWriter(dst)
+
+	if scanner.Scan() {
+		line1 := (scanner.Text())
+		fmt.Fprintln(writer, line1)
 	}
 
-	// Viser brukeren en meny med valg
-	fmt.Println("Valg:")
-	fmt.Println("  - 'convert' for å konvertere tempraturen fra Celsius til Fahrenheit")
-	fmt.Println("  - 'average' for å begregne gjennomsnitt tempratur for perioden")
-	fmt.Println("Skriv 'q' eller 'quit' for å avbryte.")
-	for {
-		fmt.Print("Velg: ")
-		option, _ := reader.ReadString('\n')
-		option = strings.ToLower(strings.TrimSpace(option))
-
-		if option == "convert" {
-			err := yr.Convert()
-			if err != nil {
-				fmt.Println("Feil med begregning av gjennomsnitt tempratur:", err)
-				return
-			}
-			fmt.Println("Gjennomsnitt begregning fullført.")
-			break
+	for scanner.Scan() {
+		line := scanner.Text()
+		fahrLine, err := yr.CelsiusToFahrenheitLine(line)
+		if err != nil {
+			log.Println(err)
+			continue
 		}
+		fmt.Fprintln(writer, fahrLine)
+	}
 
-		if option == "average" {
-			fmt.Print("Velg enhet for begregning ('c' for Celsius eller 'f' for Fahrenheit): ")
-			unit, _ := reader.ReadString('\n')
-			unit = strings.ToLower(strings.TrimSpace(unit))
+	writer.Flush()
+	fmt.Println("Conversion completed successfully.\nResults saved in kjevik-temp-fahr-20220318-20230318.csv.")
+}
 
-			avg, err := yr.Average(unit)
-			if err != nil {
-				fmt.Println("Feil under kalkulasjon:", err)
-				return
-			}
-			fmt.Printf("Gjennomsnittlig tempratur: %.2f %s\n", avg, unit)
-			break
+func averageTemp() {
+	fmt.Println("Please select in degrees Celsius or Fahrenheit? (c/f)")
+	count := 0
+	sum := 0
+
+	var input string
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		input = scanner.Text()
+
+		if strings.ToLower(input) == "c" {
+			fmt.Println("Finding the average temp in Celsius")
+			avg := yr.AverageTemp(sum, float64(count))
+			fmt.Printf("Average: %.2f\n", avg)
+			fmt.Println("Please select (c/f) for new average or (q/exit) to exit")
+
+		} else if strings.ToLower(input) == "f" {
+
+			fmt.Println("Finding the average temp in Fahrenheit")
+			// Calculate the average
+			avg := yr.AverageTemp(sum, float64(count))
+			avgFahr := conv.CelsiusToFahrenheit(avg)
+			fmt.Printf("Average: %.2f\n", avgFahr)
+
+		} else {
+			fmt.Println("Please select (c/f) or (q/exit)")
 		}
-
-		if option == "q" || option == "quit" {
-			fmt.Println("Avbryt program.")
-			return
+		if strings.ToLower(input) == "q" || strings.ToLower(input) == "exit" {
+			fmt.Println("exit")
+			os.Exit(0)
 		}
-
-		fmt.Println("Ugylid verdi, prøv igjen.")
 	}
 }
