@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mathhaug/funtemps/conv"
 	"github.com/mathhaug/minyr/yr"
 )
 
@@ -81,8 +80,8 @@ func convertCelsiusToFahrenheit() {
 
 func averageTemp() {
 	fmt.Println("Please select in degrees Celsius or Fahrenheit? (c/f)")
-	count := 0
-	sum := 0
+	count := 0.0
+	sum := 0.0
 
 	var input string
 	scanner := bufio.NewScanner(os.Stdin)
@@ -91,7 +90,7 @@ func averageTemp() {
 
 		if strings.ToLower(input) == "c" {
 			fmt.Println("Finding the average temp in Celsius")
-			avg := yr.AverageTemp(sum, float64(count))
+			avg := yr.AverageTemp(sum, count)
 			fmt.Printf("Average: %.2f\n", avg)
 			fmt.Println("Please select (c/f) for new average or (q/exit) to exit")
 
@@ -99,13 +98,13 @@ func averageTemp() {
 
 			fmt.Println("Finding the average temp in Fahrenheit")
 			// Calculate the average
-			avg := yr.AverageTemp(sum, float64(count))
-			avgFahr := conv.CelsiusToFahrenheit(avg)
-			fmt.Printf("Average: %.2f\n", avgFahr)
+			avg := yr.AverageTempFahrenheit(sum, count)
+			fmt.Printf("Average: %.2f\n", avg)
 
 		} else {
 			fmt.Println("Please select (c/f) or (q/exit)")
 		}
+
 		if strings.ToLower(input) == "q" || strings.ToLower(input) == "exit" {
 			fmt.Println("exit")
 			os.Exit(0)
